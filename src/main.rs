@@ -33,8 +33,8 @@ fn main() {
         println!("Welcome to sqlite interactive demo.");
         println!("Sqlite is running in {}\n", color_sqlite_path(in_memory, path_text.as_str()));
 
-        if let Some(table) = &app.active_table {
-            println!("Current table: \'{}\'", style(table.as_str()).green());
+        if let Some(table) = app.active_table() {
+            println!("Current table: \'{}\'", style(table).green());
         } else {
             println!("{} table selected", style("No").red());
         }
@@ -42,6 +42,7 @@ fn main() {
         use sqlite::MainMenuOption::*;
         match ask_main_menu(&app).expect("IO error") {
             DefineTable => { define_table(&mut app); },
+            SelectTable => { set_active_table(&mut app); },
             InsertRow => {},
             Display => {},
             Quit => { break; },

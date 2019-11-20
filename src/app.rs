@@ -30,7 +30,7 @@ pub struct App {
     pub view: AppView,
     pub connection: Option<Connection>,
     connection_type: SqliteConnection,
-    pub active_table: Option<String>,
+    active_table: Option<String>,
 }
 
 impl App {
@@ -64,5 +64,46 @@ impl App {
             SqliteConnection::File(path) => Some(path.as_str()),
             SqliteConnection::Memory => None,
         }
+    }
+
+    pub fn active_table(&self) -> Option<&str> {
+        match &self.active_table {
+            Some(name) => Some(name.as_str()),
+            None => None,
+        }
+    }
+
+    pub fn set_active_table(&mut self, text: &str) -> Result<(), String> {
+        use rusqlite::params;
+
+        let connection = if let Some(c) = &self.connection {
+            c
+        } else {
+            return Err(format!("Connection is not set"));
+        };
+
+        if !crate::utils::validate_table_name(text) {
+            return Err(format!("Table name is not alphanumeric"));
+        }
+
+        match connection.prepare(
+            format!("SELECT name FROM sqlite_master WHERE type='table' AND name='{}'", text).as_str(),
+        ) {
+            Ok(mut statement) => {
+                match statement.exists(params![]) {
+                    Ok(exists) => {
+                        if !exists {
+                            return Err(format!("Table does not exists."));
+                        }
+                    },
+                    Err(err) => { return Err(format!("{}", err)); }
+                }
+            }
+            Err(err) => { return Err(format!("{}", err)); }
+        }
+
+        // Successfuly found out that table exists
+        self.active_table = Some(String::from(text));
+        Ok(())
     }
 }

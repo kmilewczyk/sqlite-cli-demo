@@ -68,7 +68,10 @@ pub fn define_table(app: &mut App) {
 
     match app.connection.as_ref().unwrap().execute(query.as_str(), params![]) {
         Ok(_) => {
-            app.active_table = table.name;
+            match app.set_active_table(table.name.unwrap().as_str()) {
+                Ok(_) => {},
+                Err(err) => panic!(err),
+            }
         },
         Err(err) => {
             println!("Could not execute a query! Reason: {}", err);
@@ -127,54 +130,10 @@ fn set_name(app: &App, table: &mut TableDefinition) {
     let name = Input::with_theme(&app.view.dialog_theme)
         .with_prompt("Set name")
         .default(default_name)
+        .validate_with(ValidatorAdaptor::new(validate_table_name, format!("Table name must be alphanumeric")))
         .interact().expect("IO error");
 
     table.name = Some(name);
-}
-
-#[derive(Debug)]
-pub struct ValidationError {
-    cause: String,
-}
-
-impl ValidationError {
-    pub fn new(cause: String) -> Self {
-        Self {
-            cause: cause
-        }
-    }
-}
-
-impl std::fmt::Display for ValidationError {
-    fn fmt (&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.cause)
-    }
-}
-
-pub struct ValidatorAdaptor {
-    validate_function: fn(&str) -> bool,
-    error_reason: String,
-}
-
-impl ValidatorAdaptor {
-    pub fn new(validate_function: fn(&str)->bool, error_reason: String) -> Self {
-        Self {
-            validate_function: validate_function,
-            error_reason: error_reason,
-        }
-    }
-}
-
-impl dialoguer::Validator for ValidatorAdaptor {
-    type Err = ValidationError;
-
-    fn validate(&self, text: &str) -> Result<(), ValidationError > {
-        if (self.validate_function)(text) {
-            Ok(())
-        } else {
-            Err(ValidationError::new(self.error_reason.clone()))
-        }
-    }
 }
 
 fn add_column(app: &App, table: &mut TableDefinition) {
@@ -188,7 +147,7 @@ fn add_column(app: &App, table: &mut TableDefinition) {
         .interact().expect("IO error");
 
     column.sql_type = Input::with_theme(&app.view.dialog_theme)
-        .with_prompt("Set column type")
+        .with_prompt("Set column type with associated keywords")
         .validate_with(ValidatorAdaptor::new(validate_sql_type, String::from("SQL type must be alphanumeric")))
         .interact().expect("IO error");
 
