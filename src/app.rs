@@ -20,9 +20,16 @@ impl AppView {
     }
 }
 
+#[derive(PartialEq, Eq)]
+enum SqliteConnection {
+    File(String),
+    Memory,
+}
+
 pub struct App {
     pub view: AppView,
     pub connection: Option<Connection>,
+    connection_type: SqliteConnection,
     pub active_table: Option<String>,
 }
 
@@ -31,12 +38,31 @@ impl App {
         App {
             view: AppView::new(),
             connection: None,
+            connection_type: SqliteConnection::Memory,
             active_table: None,
         }
     }
 
+    pub fn connect_in_file(&mut self, path: &str) -> rusqlite::Result<()> {
+        self.connection_type = SqliteConnection::File(String::from(path));
+        self.connection = Some(Connection::open(path)?);
+        Ok(())
+    }
+
     pub fn connect_in_memory(&mut self) -> rusqlite::Result<()> {
+        self.connection_type = SqliteConnection::Memory;
         self.connection = Some(Connection::open_in_memory()?);
         Ok(())
+    }
+
+    pub fn is_in_memory(&self) -> bool {
+        self.connection_type == SqliteConnection::Memory
+    }
+
+    pub fn path(&self) -> Option<&str> {
+        match &self.connection_type {
+            SqliteConnection::File(path) => Some(path.as_str()),
+            SqliteConnection::Memory => None,
+        }
     }
 }
