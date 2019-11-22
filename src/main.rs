@@ -6,6 +6,7 @@ use sqlite::*;
 use sqlite::app::*;
 use sqlite::utils::*;
 use sqlite::define_table::*;
+use sqlite::insert_row::*;
 
 
 fn main() {
@@ -43,7 +44,7 @@ fn main() {
         match ask_main_menu(&app).expect("IO error") {
             DefineTable => { define_table(&mut app); },
             SelectTable => { set_active_table(&mut app); },
-            InsertRow => {},
+            InsertRow => { insert_row(&mut app); },
             Display => {},
             Quit => { break; },
         }

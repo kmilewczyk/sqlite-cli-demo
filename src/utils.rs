@@ -1,4 +1,6 @@
 use console::Term;
+use crate::app::App;
+use dialoguer::Confirmation;
 
 pub fn clear() {
     Term::stdout().clear_screen().expect("IO error");
@@ -85,4 +87,12 @@ impl dialoguer::Validator for ValidatorAdaptor {
             Err(ValidationError::new(self.error_reason.clone()))
         }
     }
+}
+
+
+pub fn ask_for_confirmation_before_query(app: &App, query: &String) -> bool{
+    println!("You are about to execute following query:");
+    println!("{}\n", query);
+
+    Confirmation::with_theme(&app.view.dialog_theme).with_text("Do you proceed?").interact().expect("IO error")
 }

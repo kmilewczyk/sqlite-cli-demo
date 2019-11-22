@@ -1,7 +1,7 @@
 use std::io;
 
 use console::style;
-use dialoguer::{Confirmation, Input, Select};
+use dialoguer::{Input, Select};
 
 use num_traits::FromPrimitive;
 
@@ -58,7 +58,7 @@ pub fn define_table(app: &mut App) {
             SetColumn(name) => { clear(); update_or_delete_column(app, &mut table, name); }
             Create => {
                 query = create_query_from_definition(&table);
-                if ask_for_confirmation_before_create(app, &query) {
+                if ask_for_confirmation_before_query(app, &query) {
                     break;
                 }
             },
@@ -240,11 +240,4 @@ fn create_query_from_definition(table: &TableDefinition) -> String {
     query.push(')');
 
     query
-}
-
-fn ask_for_confirmation_before_create(app: &App, query: &String) -> bool{
-    println!("You are about to execute following query:");
-    println!("{}\n", query);
-
-    Confirmation::with_theme(&app.view.dialog_theme).with_text("Do you proceed?").interact().expect("IO error")
 }
