@@ -15,6 +15,7 @@ pub mod define_table;
 pub mod utils;
 pub mod app;
 pub mod insert_row;
+pub mod display;
 
 use crate::app::App;
 use crate::utils::{ValidatorAdaptor, validate_table_name, wait_for_keypress, clear};

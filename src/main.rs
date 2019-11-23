@@ -7,6 +7,7 @@ use sqlite::app::*;
 use sqlite::utils::*;
 use sqlite::define_table::*;
 use sqlite::insert_row::*;
+use sqlite::display::display_table;
 
 
 fn main() {
@@ -45,7 +46,7 @@ fn main() {
             DefineTable => { define_table(&mut app); },
             SelectTable => { set_active_table(&mut app); },
             InsertRow => { insert_row(&mut app); },
-            Display => {},
+            Display => { display_table(&app); },
             Quit => { break; },
         }
     }

@@ -96,3 +96,12 @@ pub fn ask_for_confirmation_before_query(app: &App, query: &String) -> bool{
 
     Confirmation::with_theme(&app.view.dialog_theme).with_text("Do you proceed?").interact().expect("IO error")
 }
+
+
+// Taken from SO, credit to Shepmaster, "How i can truncate a string to have at most N characters
+pub fn truncate(text: &str, count: usize) -> &str {
+    match text.char_indices().nth(count) {
+        None => text,
+        Some((idx, _)) => &text[..idx],
+    }
+}
