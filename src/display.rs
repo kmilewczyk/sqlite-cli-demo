@@ -4,9 +4,9 @@ use rusqlite::{Rows, ToSql, NO_PARAMS, types::Value};
 
 use prettytable::{Table, cell};
 
-use crate::utils::{ wait_for_keypress, clear, truncate };
+use crate::utils::{ wait_for_keypress, clear, truncate, ask_for_confirmation_before_query };
 
-use dialoguer::Select;
+use dialoguer::{ Select, Input };
 
 use num_traits::FromPrimitive;
 
@@ -157,7 +157,7 @@ pub fn display_table(app: &App) {
             NextPage => { starting_row += ROWS_PER_PAGE; },
             PreviousPage => { if starting_row > 0 { starting_row -= ROWS_PER_PAGE; }; },
             DefineSorting => { set_sorting_options(app, &columns, &mut sorting_options); },
-            DeleteRows => { },
+            DeleteRows => { delete_rows(app); },
             GoBack => { break; },
         }
     }
@@ -201,7 +201,40 @@ fn set_sorting_options(app: &App, columns: &Vec<Column>, sorting_options: &mut H
             }
         }
     }
+}
 
+fn delete_rows(app: &App) {
+    clear();
+
+    println!("Define condition on which rows will be deleted");
+    if let Err(err) = delete_on_where(app) {
+        println!("{}", err);
+        wait_for_keypress();
+    }
+}
+
+fn delete_on_where(app: &App) -> Result<(), String> {
+    let name = app.active_table().ok_or(format!("No active table was defined"))?;
+    let connection = app.connection.as_ref().ok_or(format!("No connection is set to sqlite"))?;
+
+    let mut query = format!("DELETE FROM {}", name);
+    println!("{}", query);
+
+    // TODO: No validation. Its open to sql injection. Regex would be complicated. Its quick project so low chances.
+    let condition: String = Input::with_theme(&app.view.dialog_theme)
+        .with_prompt(
+            "WHERE"
+        )
+        .interact().expect("IO error");
+
+    query.push_str(" WHERE ");
+    query.push_str(condition.as_str());
+
+    if ask_for_confirmation_before_query(app, &query) {
+        connection.execute(query.as_str(), NO_PARAMS).map_err(|err| format!("{}", err))?;
+    }
+
+    Ok(())
 }
 
 fn value_repr(val: &Value) -> String {
