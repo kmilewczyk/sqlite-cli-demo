@@ -2,6 +2,8 @@ use console::Term;
 use crate::app::App;
 use dialoguer::Confirmation;
 
+use rusqlite::types::Value;
+
 pub fn clear() {
     Term::stdout().clear_screen().expect("IO error");
 }
@@ -105,3 +107,15 @@ pub fn truncate(text: &str, count: usize) -> &str {
         Some((idx, _)) => &text[..idx],
     }
 }
+
+// pub fn to_sqlite_literal(val: &Value) -> String {
+//     use rusqlite::types::Value::*;
+
+//     match val {
+//         Null => format!("NULL"),
+//         Integer(i) => String::from(i),
+//         Real(f) => Real(f+1.0),
+//         Text(t) => Text({ let mut c = t.clone(); c.push('a'); c }),
+//         Blob(v) => Blob(v.clone()),
+//     }
+// }

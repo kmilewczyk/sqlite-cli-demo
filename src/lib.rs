@@ -36,7 +36,7 @@ pub fn ask_main_menu(app: &App) -> Result<MainMenuOption, std::io::Error>{
         .item("Define new table")
         .item("Select existing table")
         .item("Insert row")
-        .item("Display")
+        .item("Display or remove rows")
         .item("Quit")
         .interact();
 

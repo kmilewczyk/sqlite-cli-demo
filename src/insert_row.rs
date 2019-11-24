@@ -10,9 +10,7 @@ use crate::utils::*;
 use dialoguer::{ Select, Input };
 use num_traits::FromPrimitive;
 
-use rusqlite::{params, NO_PARAMS, Rows};
-
-use std::borrow::Borrow;
+use rusqlite::{NO_PARAMS, Rows, types::Value};
 
 pub fn insert_row(app: &mut App) {
     clear();
@@ -41,16 +39,16 @@ pub fn insert_row(app: &mut App) {
 
         match Answer::from_usize(option).unwrap() {
             UserInsertRow => { user_defined_insert(app); },
-            ConsecutiveInsert => {},
+            ConsecutiveInsert => { consecutive_rows(app); },
             Back => { break; },
         }
     }
 }
 
 
-struct Column {
-    name: String,
-    sqltype: String,
+pub struct Column {
+    pub name: String,
+    pub sqltype: String,
 }
 
 fn user_defined_insert(app: &mut App) {
@@ -98,7 +96,7 @@ fn user_defined_insert(app: &mut App) {
     }
 }
 
-fn save_column_info(rows: Rows) -> Result<Vec<Column>, String> {
+pub fn save_column_info(rows: Rows) -> Result<Vec<Column>, String> {
     let mut info: Vec<Column> = Vec::new();
 
     let columns = match rows.columns() {
@@ -123,7 +121,7 @@ fn save_column_info(rows: Rows) -> Result<Vec<Column>, String> {
 }
 
 
-fn get_table(app: &App) -> Result<Vec<Column>, String>{
+pub fn get_table(app: &App) -> Result<Vec<Column>, String>{
     let connection = app.connection.as_ref().expect("No defined connection to sqlite");
     let name = app.active_table().expect("No active table was chosen");
 
@@ -142,4 +140,46 @@ fn get_table(app: &App) -> Result<Vec<Column>, String>{
         }
         Err(err) => { return Err(format!("Could not prepare query: {}", err)); },
     };
+}
+
+fn consecutive_rows(app: &App) {
+    clear();
+
+    if let Err(err) = insert_consecutive_rows(app) {
+        println!("Failed to insert consequtive row. {}\n", err);
+    } else {
+        println!("Inserted row");
+    }
+
+    wait_for_keypress();
+}
+
+// Why (x+1)||1
+// Mostly beacuse doing 'a'+1 is considered 1
+// x'00' || 1 is NULL
+// combination (x+1)||1 mostly works for all literals
+
+fn insert_consecutive_rows(app: &App) -> Result<(), String> {
+    let column_definitions = get_table(app)?;
+
+    let connection = app.connection.as_ref().expect("No defined connection to sqlite");
+    let name = app.active_table().expect("No active table was chosen");
+
+    let column_count = column_definitions.len();
+    let mut query = format!("INSERT INTO {} SELECT", name);
+    for (i, column) in column_definitions.iter().enumerate() {
+        query.push_str(format!(" MAX(({}+1)||1)", column.name).as_str());
+        if i < column_count-1 {
+            query.push(',');
+        }
+    }
+
+    query.push_str(format!(" FROM {};", name).as_str());
+
+    let count = connection.execute(query.as_str(), NO_PARAMS).map_err(|err| format!("{}", err))?;
+    if count != 1 {
+        return Err(String::from("Row was not inserted"));
+    }
+
+    Ok(())
 }
